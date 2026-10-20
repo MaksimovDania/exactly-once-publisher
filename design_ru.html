@@ -1,0 +1,615 @@
+<title>Публикация ровно один раз</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+/* Layout: one reading column (~68ch) with figures allowed to run wider; engineering-review tone, not a landing page. */
+:root {
+  --bg: #f4f6f9;
+  --surface: #ffffff;
+  --panel: #eaeef4;
+  --fg: #16202c;
+  --muted: #5a6677;
+  --line: #cdd4de;
+  --accent: #2a55c9;
+  --accent-soft: #e2e9fd;
+  --warn: #a35f14;
+  --warn-soft: #fbeedc;
+  --display: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1217; --surface: #151b23; --panel: #1b222c; --fg: #e3e8ef; --muted: #98a3b3;
+    --line: #2c3541; --accent: #88a7ff; --accent-soft: #1b2849; --warn: #e2a65b; --warn-soft: #362712;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1217; --surface: #151b23; --panel: #1b222c; --fg: #e3e8ef; --muted: #98a3b3;
+  --line: #2c3541; --accent: #88a7ff; --accent-soft: #1b2849; --warn: #e2a65b; --warn-soft: #362712;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg);
+  font: 400 16px/1.62 var(--sans);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 40px 72px;
+}
+main { max-width: 1000px; margin: 0 auto; display: grid; gap: 56px; }
+section { display: grid; gap: 18px; min-width: 0; }
+.prose { max-width: 68ch; display: grid; gap: 14px; }
+.prose > * { margin: 0; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; line-height: 1.15; }
+h1 { font-size: clamp(2.1rem, 5vw, 3rem); font-weight: 600; letter-spacing: -0.01em; }
+h2 { font-size: 1.65rem; font-weight: 600; }
+h3 { font-size: 1.15rem; font-weight: 600; }
+.eyebrow { font: 500 0.78rem/1 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.lede { font-size: 1.15rem; color: var(--fg); }
+.muted { color: var(--muted); }
+code, .mono { font-family: var(--mono); font-size: 0.88em; }
+:not(pre) > code { background: var(--panel); padding: 0.1em 0.35em; border-radius: 4px; }
+a { color: var(--accent); }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+strong { font-weight: 600; }
+
+header { display: grid; gap: 16px; }
+.decisions { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin-top: 8px; }
+.decision { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 16px 18px; display: grid; gap: 6px; align-content: start; min-width: 0; }
+.decision h3 { font-size: 1.05rem; }
+.decision p { margin: 0; font-size: 0.95rem; color: var(--muted); }
+
+.invariant { border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 14px 18px; border-radius: 0 8px 8px 0; max-width: 68ch; }
+.invariant p { margin: 0; }
+
+ol.steps { margin: 0; padding-left: 1.4em; display: grid; gap: 10px; max-width: 68ch; }
+ol.steps li::marker { font-family: var(--mono); color: var(--muted); }
+
+figure { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 20px 20px 16px; display: grid; gap: 12px; min-width: 0; }
+.scroll { overflow-x: auto; min-width: 0; }
+figure svg { display: block; width: 100%; height: auto; min-width: 640px; }
+figcaption { font-size: 0.92rem; color: var(--muted); max-width: 80ch; }
+figcaption b { color: var(--fg); font-weight: 600; }
+
+.table-wrap { overflow-x: auto; min-width: 0; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 0.92rem; }
+th, td { text-align: left; vertical-align: top; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+tr:last-child td { border-bottom: 0; }
+th { font: 500 0.75rem/1.3 var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); background: var(--panel); }
+td:first-child { font-weight: 500; }
+.num { font-variant-numeric: tabular-nums; }
+
+pre { margin: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; overflow-x: auto; font: 400 0.84rem/1.55 var(--mono); }
+.ok { color: var(--accent); font-weight: 500; }
+
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 16px 18px; display: grid; gap: 8px; align-content: start; min-width: 0; }
+.card ul { margin: 0; padding-left: 1.1em; display: grid; gap: 6px; font-size: 0.95rem; }
+.card h3 { font-size: 1.05rem; }
+
+/* diagram vocabulary */
+.d-box { fill: var(--surface); stroke: var(--line); stroke-width: 1.2; }
+.d-group { fill: var(--panel); stroke: var(--line); stroke-width: 1; }
+.d-core { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.4; }
+.d-warnbox { fill: var(--warn-soft); stroke: var(--warn); stroke-width: 1.2; }
+.d-dashed { fill: none; stroke: var(--line); stroke-width: 1.2; stroke-dasharray: 5 4; }
+.d-title { fill: var(--fg); font: 600 13px var(--sans); }
+.d-gtitle { fill: var(--fg); font: 600 14px var(--display); }
+.d-sub { fill: var(--muted); font: 400 11px var(--mono); }
+.d-lbl { fill: var(--fg); font: 400 11.5px var(--mono); }
+.d-lbl-acc { fill: var(--accent); font: 500 11.5px var(--mono); }
+.d-lbl-warn { fill: var(--warn); font: 500 11.5px var(--mono); }
+.d-note { fill: var(--fg); font: 400 12.5px var(--sans); }
+.d-line { stroke: var(--fg); stroke-width: 1.3; fill: none; }
+.d-line-acc { stroke: var(--accent); stroke-width: 1.8; fill: none; }
+.d-line-warn { stroke: var(--warn); stroke-width: 1.5; fill: none; stroke-dasharray: 5 4; }
+.d-ret { stroke: var(--muted); stroke-width: 1.2; fill: none; stroke-dasharray: 4 4; }
+.d-life { stroke: var(--line); stroke-width: 1.2; stroke-dasharray: 3 5; }
+.d-track { stroke: var(--line); stroke-width: 1.2; }
+.m-fg { fill: var(--fg); }
+.m-acc { fill: var(--accent); }
+.m-muted { fill: var(--muted); }
+.m-warn { fill: var(--warn); }
+.d-dot { fill: var(--fg); }
+.d-dot-acc { fill: var(--accent); }
+.d-dot-warn { fill: var(--warn); }
+.d-frozen { fill: var(--warn-soft); stroke: var(--warn); stroke-width: 1; stroke-dasharray: 3 3; }
+
+@media (max-width: 560px) {
+  body { padding-block: 24px 48px; }
+  main { gap: 44px; }
+  figure { padding: 14px 12px 12px; }
+}
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; } }
+</style>
+
+<style>
+.plain { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 16px 18px; max-width: 68ch; display: grid; gap: 10px; }
+.plain > * { margin: 0; }
+.plain .eyebrow { color: var(--accent); }
+.hard { border-left: 3px solid var(--warn); background: var(--warn-soft); padding: 14px 18px; border-radius: 0 8px 8px 0; max-width: 68ch; display: grid; gap: 10px; }
+.hard > * { margin: 0; }
+dl.gloss { margin: 0; display: grid; grid-template-columns: minmax(120px, max-content) 1fr; gap: 10px 20px; max-width: 80ch; }
+dl.gloss dt { font-family: var(--mono); font-size: 0.9rem; font-weight: 500; }
+dl.gloss dd { margin: 0; color: var(--fg); }
+@media (max-width: 560px) { dl.gloss { grid-template-columns: 1fr; gap: 2px; } dl.gloss dd { margin-bottom: 10px; } }
+ul.files { margin: 0; padding-left: 1.2em; display: grid; gap: 8px; max-width: 72ch; }
+</style>
+
+<main>
+
+<header>
+  <div class="eyebrow">Системный дизайн · домашнее задание · с рабочим демо</div>
+  <h1>Публикация ровно один раз</h1>
+  <div class="prose">
+    <p class="lede">Задача: каждый день публиковать 200 000 SEO-статей на сайты клиентов: Shopify, WordPress, Webflow, Wix. Любой вызов API может упасть или зависнуть, сервис могут перезапустить в любую секунду. После перезапуска каждая статья должна оказаться на сайте ровно один раз.</p>
+  </div>
+  <div class="hard">
+    <p><strong>В чём настоящая сложность.</strong> Мы отправили запрос «создай пост», а ответ не пришёл. Создан пост или нет, узнать нельзя. Если повторить запрос, может появиться дубль. Если не повторять, статья может не выйти.</p>
+    <p>Эти платформы не принимают ключ идемпотентности при создании поста, поэтому «выполнить запрос ровно один раз» невозможно в принципе. Зато можно повторять сколько угодно и сделать так, чтобы повтор ничего не портил. Тогда читатель увидит статью ровно один раз.</p>
+  </div>
+  <div class="prose">
+    <p class="muted">Нагрузка небольшая: 200 тыс. в день это 2,3 статьи в секунду, в пике около 25. Хватит одного Postgres и пары воркеров. Сложность задачи в надёжности, а не в объёме.</p>
+  </div>
+  <div class="decisions">
+    <div class="decision">
+      <h3>Postgres вместо очереди</h3>
+      <p>Одна строка в таблице это сразу задача, её состояние и блокировка. Нет второй системы, которую надо синхронизировать с базой.</p>
+    </div>
+    <div class="decision">
+      <h3>Аренда сайта, а не статьи</h3>
+      <p>Аренда берётся на то, что платформа ограничивает, обычно на сайт. С ним в каждый момент работает один воркер.</p>
+    </div>
+    <div class="decision">
+      <h3>Черновик, поиск, коммит, публикация</h3>
+      <p>До последнего шага читатель ничего не видит. Публикуется только тот пост, чей id записан в базе.</p>
+    </div>
+  </div>
+</header>
+
+<section>
+  <h2>Что я сделал</h2>
+  <ul class="files">
+    <li><code>publisher.py</code>: воркер, около 150 строк. Берёт сайт, публикует его статьи по шагам и после каждого вызова API сохраняет прогресс в Postgres.</li>
+    <li><code>platforms.py</code>: правила, которые обязан соблюдать адаптер любой платформы, и адаптер WordPress.</li>
+    <li><code>schema.sql</code>: три таблицы, больше ничего.</li>
+    <li><code>fake_platform.py</code>: поддельный WordPress, который нарочно ломается: отвечает 500, зависает, ограничивает частоту запросов, отстаёт в поиске.</li>
+    <li><code>chaos.py</code>: тест. Убивает и замораживает воркеров на ходу, а в конце проверяет, что каждая статья опубликована ровно один раз.</li>
+    <li><code>README.md</code> и английская страница со схемами: технический дизайн для отправки.</li>
+    <li><code>REVIEW.md</code>: независимое ревью из отдельной сессии. Всё, что оно отметило обязательным, исправлено (ниже).</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Как устроено</h2>
+  <figure>
+    <div class="scroll">
+    <svg viewBox="0 0 1000 420" role="img" aria-label="Архитектура: генерация статей ставит публикации в Postgres; воркеры арендуют сайт клиента, берут статьи, коммитят каждый шаг в Postgres и вызывают Shopify, WordPress, Webflow и Wix через адаптеры.">
+      <defs>
+        <marker id="r1-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="m-fg"/></marker>
+        <marker id="r1-acc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="m-acc"/></marker>
+      </defs>
+
+      <rect class="d-box" x="20" y="70" width="130" height="56" rx="6"/>
+      <text class="d-title" x="85" y="94" text-anchor="middle">Генерация статей</text>
+      <text class="d-sub" x="85" y="112" text-anchor="middle">пишет контент</text>
+      <text class="d-sub" x="20" y="148">в очередь без дублей:</text>
+      <text class="d-lbl" x="20" y="164">ON CONFLICT</text>
+      <text class="d-lbl" x="20" y="180">DO NOTHING</text>
+      <path class="d-line" d="M150 98 H182 V188 H218" marker-end="url(#r1-a)"/>
+
+      <rect class="d-box" x="20" y="290" width="130" height="56" rx="6"/>
+      <text class="d-title" x="85" y="314" text-anchor="middle">Кабинет клиента</text>
+      <text class="d-sub" x="85" y="332" text-anchor="middle">UI · API</text>
+      <text class="d-sub" x="20" y="366">читает статусы,</text>
+      <text class="d-sub" x="20" y="382">переподключает сайт</text>
+      <path class="d-line" d="M150 318 H218" marker-end="url(#r1-a)"/>
+
+      <rect class="d-group" x="200" y="24" width="270" height="372" rx="10"/>
+      <text class="d-gtitle" x="216" y="47">Postgres</text>
+      <text class="d-sub" x="454" y="47" text-anchor="end">очередь, стейт, локи</text>
+
+      <rect class="d-box" x="220" y="60" width="230" height="62" rx="6"/>
+      <text class="d-title" x="236" y="84">articles</text>
+      <text class="d-sub" x="236" y="104">контент · uid = маркер</text>
+
+      <rect class="d-core" x="220" y="138" width="230" height="116" rx="6"/>
+      <text class="d-title" x="236" y="162">publications</text>
+      <text class="d-sub" x="236" y="182">строка = статья × сайт</text>
+      <text class="d-sub" x="236" y="200">UNIQUE(статья, сайт)</text>
+      <text class="d-sub" x="236" y="218">step · state · attempts</text>
+      <text class="d-sub" x="236" y="236">run_at = когда делать</text>
+
+      <rect class="d-box" x="220" y="270" width="230" height="106" rx="6"/>
+      <text class="d-title" x="236" y="294">destinations</text>
+      <text class="d-sub" x="236" y="314">строка = сайт клиента</text>
+      <text class="d-sub" x="236" y="332">lease_until · rate_per_sec</text>
+      <text class="d-sub" x="236" y="350">status · креды (KMS)</text>
+
+      <path class="d-line" d="M590 172 H472" marker-end="url(#r1-a)"/>
+      <text class="d-lbl" x="531" y="164" text-anchor="middle">взять статью</text>
+      <text class="d-sub" x="531" y="187" text-anchor="middle">run_at += backoff</text>
+      <path class="d-line-acc" d="M590 228 H472" marker-end="url(#r1-acc)"/>
+      <text class="d-lbl-acc" x="531" y="220" text-anchor="middle">коммит шага</text>
+      <text class="d-sub" x="531" y="243" text-anchor="middle">CAS по step</text>
+      <path class="d-line" d="M590 322 H472" marker-end="url(#r1-a)"/>
+      <text class="d-lbl" x="531" y="314" text-anchor="middle">взять сайт</text>
+      <text class="d-sub" x="531" y="337" text-anchor="middle">SKIP LOCKED</text>
+
+      <rect class="d-group" x="590" y="24" width="200" height="372" rx="10"/>
+      <text class="d-gtitle" x="606" y="47">Воркеры × N</text>
+      <rect class="d-box" x="610" y="64" width="160" height="58" rx="6"/>
+      <text class="d-title" x="626" y="88">лейн → сайт A</text>
+      <text class="d-sub" x="626" y="106">темп = лимит A</text>
+      <rect class="d-box" x="610" y="140" width="160" height="58" rx="6"/>
+      <text class="d-title" x="626" y="164">лейн → сайт B</text>
+      <text class="d-sub" x="626" y="182">темп = лимит B</text>
+      <rect class="d-box" x="610" y="216" width="160" height="58" rx="6"/>
+      <text class="d-title" x="626" y="240">лейн → сайт C</text>
+      <text class="d-sub" x="626" y="258">темп = лимит C</text>
+      <text class="d-sub" x="606" y="306">без состояния</text>
+      <text class="d-sub" x="606" y="324">kill -9: аренда истечёт</text>
+      <text class="d-sub" x="606" y="342">SIGTERM: доделать, отдать</text>
+
+      <path class="d-line" d="M770 93 L848 66" marker-end="url(#r1-a)"/>
+      <text class="d-sub" x="814" y="66" text-anchor="middle">адаптер</text>
+      <path class="d-line" d="M770 169 L848 132" marker-end="url(#r1-a)"/>
+      <path class="d-line" d="M770 245 L848 198" marker-end="url(#r1-a)"/>
+
+      <rect class="d-box" x="850" y="40" width="130" height="50" rx="6"/>
+      <text class="d-title" x="915" y="70" text-anchor="middle">Shopify</text>
+      <rect class="d-box" x="850" y="106" width="130" height="50" rx="6"/>
+      <text class="d-title" x="915" y="136" text-anchor="middle">WordPress</text>
+      <rect class="d-box" x="850" y="172" width="130" height="50" rx="6"/>
+      <text class="d-title" x="915" y="202" text-anchor="middle">Webflow</text>
+      <rect class="d-box" x="850" y="238" width="130" height="50" rx="6"/>
+      <text class="d-title" x="915" y="268" text-anchor="middle">Wix</text>
+      <rect class="d-dashed" x="850" y="304" width="130" height="50" rx="6"/>
+      <text class="d-title" x="915" y="326" text-anchor="middle">новая платформа</text>
+      <text class="d-sub" x="915" y="343" text-anchor="middle">= один класс</text>
+    </svg>
+    </div>
+    <figcaption><b>Рис. 1.</b> Весь сервис: три таблицы и один цикл воркера. Синим отмечено главное: каждый шаг сразу записывается в базу.</figcaption>
+  </figure>
+
+  <div class="plain">
+    <div class="eyebrow">Простыми словами</div>
+    <ol class="steps">
+      <li><strong>Воркер арендует сайт клиента.</strong> В базе ставится отметка «этот сайт мой до такого-то времени». Если воркер умрёт, аренда истечёт сама, и сайт возьмёт другой воркер.</li>
+      <li><strong>Берёт следующую статью этого сайта</strong> и сразу переносит её на «попробовать позже». Если воркер упадёт посреди работы, статья сама вернётся в очередь.</li>
+      <li><strong>Выполняет шаги</strong>: загрузить картинку, создать черновик, опубликовать. После каждого шага записывает результат в базу, поэтому после рестарта работа продолжается с того же места, а не с начала.</li>
+      <li><strong>Через 20 секунд отдаёт сайт</strong>, чтобы успеть обслужить других клиентов. Если сайт ответил «слишком часто» (429 или 503 с Retry-After), отдаёт его с пометкой «не трогать N секунд».</li>
+    </ol>
+  </div>
+</section>
+
+<section>
+  <h2>Путь одной статьи</h2>
+  <figure>
+    <div class="scroll">
+    <svg viewBox="0 0 880 590" role="img" aria-label="Последовательность: воркер загружает картинку и коммитит её, создаёт черновик, ответ теряется по таймауту, хотя пост 42 уже создан; позже воркер находит пост 42 по маркеру, записывает его id, публикует и коммитит завершение.">
+      <defs>
+        <marker id="r2-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="m-fg"/></marker>
+        <marker id="r2-acc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="m-acc"/></marker>
+        <marker id="r2-m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="m-muted"/></marker>
+      </defs>
+
+      <rect class="d-box" x="40" y="14" width="140" height="38" rx="6"/>
+      <text class="d-title" x="110" y="38" text-anchor="middle">Воркер</text>
+      <rect class="d-box" x="350" y="14" width="140" height="38" rx="6"/>
+      <text class="d-title" x="420" y="38" text-anchor="middle">Postgres</text>
+      <rect class="d-box" x="680" y="14" width="160" height="38" rx="6"/>
+      <text class="d-title" x="760" y="38" text-anchor="middle">Сайт (WordPress)</text>
+      <line class="d-life" x1="110" y1="52" x2="110" y2="578"/>
+      <line class="d-life" x1="420" y1="52" x2="420" y2="578"/>
+      <line class="d-life" x1="760" y1="52" x2="760" y2="578"/>
+
+      <path class="d-line" d="M110 88 H418" marker-end="url(#r2-a)"/>
+      <text class="d-lbl" x="265" y="80" text-anchor="middle">взять сайт (SKIP LOCKED)</text>
+      <path class="d-line" d="M110 122 H418" marker-end="url(#r2-a)"/>
+      <text class="d-lbl" x="265" y="114" text-anchor="middle">статья: attempts+1, run_at += backoff</text>
+
+      <path class="d-line" d="M110 156 H758" marker-end="url(#r2-a)"/>
+      <text class="d-lbl" x="590" y="148" text-anchor="middle">POST /media</text>
+      <path class="d-ret" d="M760 182 H112" marker-end="url(#r2-m)"/>
+      <text class="d-sub" x="590" y="176" text-anchor="middle">{ id: 17 }</text>
+
+      <path class="d-line-acc" d="M110 216 H418" marker-end="url(#r2-acc)"/>
+      <text class="d-lbl-acc" x="265" y="208" text-anchor="middle">CAS step ∅ → draft, media_id=17</text>
+
+      <path class="d-line" d="M110 250 H758" marker-end="url(#r2-a)"/>
+      <text class="d-lbl" x="590" y="242" text-anchor="middle">GET /posts?search=&lt;uid статьи&gt;</text>
+      <path class="d-ret" d="M760 276 H112" marker-end="url(#r2-m)"/>
+      <text class="d-sub" x="590" y="270" text-anchor="middle">[ ]</text>
+
+      <path class="d-line" d="M110 310 H758" marker-end="url(#r2-a)"/>
+      <text class="d-lbl" x="590" y="302" text-anchor="middle">POST /posts  черновик без slug + маркер</text>
+      <circle class="d-dot" cx="760" cy="322" r="4"/>
+      <text class="d-sub" x="770" y="326">#42 создан</text>
+      <path class="d-line-warn" d="M760 336 H300"/>
+      <path class="d-line-warn" d="M282 328 L298 344 M298 328 L282 344" style="stroke-dasharray:none"/>
+      <text class="d-lbl-warn" x="590" y="330" text-anchor="middle">ответ потерян: таймаут</text>
+
+      <rect class="d-warnbox" x="30" y="356" width="820" height="40" rx="6"/>
+      <text class="d-note" x="440" y="381" text-anchor="middle">Откатывать нечего: статья уже перенесена на потом. Позже, возможно другим воркером после краша:</text>
+
+      <path class="d-line" d="M110 426 H758" marker-end="url(#r2-a)"/>
+      <text class="d-lbl" x="590" y="418" text-anchor="middle">GET /posts?search=&lt;uid статьи&gt;</text>
+      <path class="d-ret" d="M760 452 H112" marker-end="url(#r2-m)"/>
+      <text class="d-sub" x="590" y="446" text-anchor="middle">[ #42 с нашим маркером ] → берём его</text>
+
+      <path class="d-line-acc" d="M110 486 H418" marker-end="url(#r2-acc)"/>
+      <text class="d-lbl-acc" x="265" y="478" text-anchor="middle">CAS step draft → publish, post_id=42</text>
+
+      <path class="d-line-acc" d="M110 520 H758" marker-end="url(#r2-acc)"/>
+      <text class="d-lbl-acc" x="590" y="512" text-anchor="middle">POST /posts/42 {publish, slug} (идемпотентно)</text>
+      <circle class="d-dot-acc" cx="760" cy="532" r="4"/>
+      <text class="d-lbl-acc" x="770" y="536">#42 виден</text>
+
+      <path class="d-line-acc" d="M110 554 H418" marker-end="url(#r2-acc)"/>
+      <text class="d-lbl-acc" x="265" y="546" text-anchor="middle">CAS step publish → done</text>
+    </svg>
+    </div>
+    <figcaption><b>Рис. 2.</b> Самый опасный случай: сайт создал пост, но ответ до нас не дошёл.</figcaption>
+  </figure>
+  <div class="plain">
+    <div class="eyebrow">Простыми словами</div>
+    <p>В каждый пост мы вшиваем невидимый HTML-комментарий с uid статьи. Это наш маркер. Перед созданием поста воркер всегда ищет пост с таким маркером. Нашёл: значит, прошлая попытка всё-таки сработала, и он берёт этот пост вместо того, чтобы создавать второй.</p>
+    <p>Маркер содержит uid статьи, а не адрес страницы. Поэтому собственный пост клиента с таким же адресом мы никогда не примем за свой.</p>
+    <p>Черновик создаётся без адреса (slug). WordPress, выбирая адрес при публикации, учитывает и черновики. Лишний черновик с тем же адресом увёл бы статью на <code>slug-2</code>. Поэтому адрес ставится в момент публикации, а наши лишние черновики перед этим отправляются в корзину.</p>
+    <p>Последний шаг, «опубликовать», безопасно повторять: опубликовать уже опубликованный пост ничего не меняет.</p>
+  </div>
+</section>
+
+<section>
+  <h2>Почему дублей не будет</h2>
+  <div class="invariant">
+    <p><strong>Главное правило.</strong> Единственное действие, которое видит читатель, это «опубликовать». Оно применяется только к посту, id которого записан в базе. А база принимает ровно один id на публикацию. Аренды и таймауты влияют только на скорость, но никогда на корректность.</p>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <tr><th>что может пойти не так</th><th>что спасает</th></tr>
+      <tr><td>дневной батч запустили дважды</td><td>пара (статья, сайт) уникальна в базе, поэтому вторая вставка ничего не делает</td></tr>
+      <tr><td>создание поста зависло, но сработало</td><td>перед созданием ищем пост с нашим маркером и берём его</td></tr>
+      <tr><td>воркер умер между ответом сайта и записью в базу</td><td>то же самое: следующая попытка найдёт пост по маркеру</td></tr>
+      <tr><td>два воркера взялись за одну статью</td><td>compare-and-set: результат шага записывает только первый, второй останавливается (рис. 3)</td></tr>
+      <tr><td>потерялся ответ на «опубликовать»</td><td>публикацию безопасно повторить</td></tr>
+      <tr><td>поиск ещё не видит наш черновик</td><td>появится второй черновик. Без адреса он не мешает, а шаг публикации отправит его в корзину</td></tr>
+      <tr><td>у клиента уже есть пост с таким адресом</td><td>его пост мы не трогаем, на нём нет маркера. Наша статья выйдет как <code>slug-2</code>, клиент увидит предупреждение</td></tr>
+      <tr><td>базу восстановили из старого бэкапа</td><td>маркер это uid статьи, поэтому пост находится, даже если строку публикации потеряли и создали заново. Живой пост предпочитается черновику</td></tr>
+    </table>
+  </div>
+
+  <figure>
+    <div class="scroll">
+    <svg viewBox="0 0 930 300" role="img" aria-label="Гонка: воркер A создаёт черновик 42 и замерзает дольше аренды; воркер B перехватывает, создаёт черновик 43 и выигрывает compare-and-set; A просыпается, его запись меняет 0 строк, и он останавливается; публикуется только пост 43, черновик 42 никто не видит.">
+      <defs>
+        <marker id="r3-acc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="m-acc"/></marker>
+      </defs>
+
+      <text class="d-title" x="20" y="66">Воркер A</text>
+      <text class="d-sub" x="20" y="83">зомби</text>
+      <text class="d-title" x="20" y="162">publications</text>
+      <text class="d-sub" x="20" y="179">та самая строка</text>
+      <text class="d-title" x="20" y="256">Воркер B</text>
+      <text class="d-sub" x="20" y="273">новый владелец</text>
+
+      <line class="d-track" x1="180" y1="70" x2="720" y2="70"/>
+      <circle class="d-dot" cx="215" cy="70" r="5"/>
+      <text class="d-lbl" x="215" y="52" text-anchor="middle">черновик #42</text>
+      <rect class="d-frozen" x="250" y="61" width="220" height="18" rx="3"/>
+      <text class="d-lbl-warn" x="360" y="52" text-anchor="middle">замёрз дольше аренды</text>
+      <path class="d-line-warn" d="M560 78 V138"/>
+      <path class="d-line-warn" d="M552 132 L568 148 M568 132 L552 148" style="stroke-dasharray:none"/>
+      <circle class="d-dot-warn" cx="560" cy="70" r="5"/>
+      <text class="d-lbl-warn" x="560" y="52" text-anchor="middle">CAS → 0 строк</text>
+      <text class="d-lbl-warn" x="620" y="104">LostRace, стоп</text>
+
+      <rect class="d-box" x="180" y="150" width="260" height="30" rx="4"/>
+      <text class="d-lbl" x="310" y="169" text-anchor="middle">step = draft</text>
+      <rect class="d-core" x="440" y="150" width="160" height="30" rx="4"/>
+      <text class="d-lbl-acc" x="520" y="169" text-anchor="middle">publish · пост 43</text>
+      <rect class="d-core" x="600" y="150" width="120" height="30" rx="4"/>
+      <text class="d-lbl-acc" x="660" y="169" text-anchor="middle">done</text>
+
+      <line class="d-track" x1="180" y1="260" x2="720" y2="260"/>
+      <circle class="d-dot" cx="290" cy="260" r="5"/>
+      <text class="d-lbl" x="290" y="284" text-anchor="middle">перехват</text>
+      <circle class="d-dot" cx="365" cy="260" r="5"/>
+      <text class="d-lbl" x="365" y="284" text-anchor="middle">черн. #43</text>
+      <circle class="d-dot-acc" cx="440" cy="260" r="5"/>
+      <path class="d-line-acc" d="M440 254 V184" marker-end="url(#r3-acc)"/>
+      <text class="d-lbl-acc" x="440" y="284" text-anchor="middle">CAS ✓</text>
+      <circle class="d-dot-acc" cx="520" cy="260" r="5"/>
+      <text class="d-lbl-acc" x="520" y="284" text-anchor="middle">публикует</text>
+      <circle class="d-dot-acc" cx="600" cy="260" r="5"/>
+      <path class="d-line-acc" d="M600 254 V184" marker-end="url(#r3-acc)"/>
+      <text class="d-lbl-acc" x="600" y="284" text-anchor="middle">done</text>
+
+      <text class="d-gtitle" x="800" y="30">Сайт</text>
+      <rect class="d-dashed" x="800" y="45" width="120" height="50" rx="6"/>
+      <text class="d-title" x="860" y="67" text-anchor="middle">#42 · черновик</text>
+      <text class="d-sub" x="860" y="84" text-anchor="middle">без slug</text>
+      <rect class="d-core" x="800" y="140" width="120" height="50" rx="6"/>
+      <text class="d-title" x="860" y="162" text-anchor="middle">#43 · виден</text>
+      <text class="d-sub" x="860" y="179" text-anchor="middle">ровно один раз</text>
+      <path class="d-line-acc" d="M722 165 H798" marker-end="url(#r3-acc)"/>
+      <text class="d-lbl-acc" x="760" y="157" text-anchor="middle">publish</text>
+    </svg>
+    </div>
+    <figcaption><b>Рис. 3.</b> Худший случай. Тест специально его воспроизводит.</figcaption>
+  </figure>
+  <div class="plain">
+    <div class="eyebrow">Простыми словами</div>
+    <p><strong>Зомби</strong> это воркер, который завис дольше своей аренды, например из-за паузы сборщика мусора или заморозки виртуалки. Пока он спал, сайт забрал другой воркер. Проснувшись, зомби продолжает как ни в чём не бывало и тоже создаёт пост.</p>
+    <p>Защита: каждая запись шага в базу звучит как «запиши, только если шаг всё ещё такой, каким я его видел» (compare-and-set). Кто записал первым, тот и выиграл. Второй получает «0 строк обновлено» и останавливается. Публикуется только пост, id которого попал в базу. Черновик проигравшего без адреса, поэтому победитель получает точный URL, а шаг публикации отправляет такие черновики в корзину.</p>
+  </div>
+</section>
+
+<section>
+  <h2>Почему аренда сайта, а не статьи</h2>
+  <figure>
+    <div class="scroll">
+    <svg viewBox="0 0 930 270" role="img" aria-label="Сравнение: при аренде статей все четыре воркера ждут общий лимитер ради горячего сайта A, а сайты B и C голодают; при аренде сайтов каждый воркер владеет своим сайтом, сам держит темп, а четвёртый берёт следующий сайт.">
+      <defs>
+        <marker id="r4-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="m-fg"/></marker>
+        <marker id="r4-acc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="m-acc"/></marker>
+        <marker id="r4-m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="m-muted"/></marker>
+      </defs>
+
+      <rect class="d-group" x="4" y="4" width="446" height="262" rx="8"/>
+      <text class="d-gtitle" x="20" y="30">Аренда статьи</text>
+      <text class="d-sub" x="20" y="47">+ общий лимитер (отклонено)</text>
+      <rect class="d-box" x="20" y="66" width="76" height="32" rx="5"/><text class="d-lbl" x="58" y="86" text-anchor="middle">воркер 1</text>
+      <rect class="d-box" x="20" y="110" width="76" height="32" rx="5"/><text class="d-lbl" x="58" y="130" text-anchor="middle">воркер 2</text>
+      <rect class="d-box" x="20" y="154" width="76" height="32" rx="5"/><text class="d-lbl" x="58" y="174" text-anchor="middle">воркер 3</text>
+      <rect class="d-box" x="20" y="198" width="76" height="32" rx="5"/><text class="d-lbl" x="58" y="218" text-anchor="middle">воркер 4</text>
+      <path class="d-line" d="M96 82 L168 134" marker-end="url(#r4-a)"/>
+      <path class="d-line" d="M96 126 L168 142" marker-end="url(#r4-a)"/>
+      <path class="d-line" d="M96 170 L168 154" marker-end="url(#r4-a)"/>
+      <path class="d-line" d="M96 214 L168 162" marker-end="url(#r4-a)"/>
+      <rect class="d-box" x="170" y="113" width="110" height="70" rx="6"/>
+      <text class="d-title" x="225" y="143" text-anchor="middle">лимитер</text>
+      <text class="d-sub" x="225" y="161" text-anchor="middle">Redis, общий</text>
+      <path class="d-line" d="M280 128 L338 92" marker-end="url(#r4-a)"/>
+      <text class="d-lbl-warn" x="300" y="100" text-anchor="end">все ждут A</text>
+      <rect class="d-box" x="340" y="66" width="96" height="44" rx="5"/>
+      <text class="d-title" x="388" y="85" text-anchor="middle">сайт A</text>
+      <text class="d-sub" x="388" y="101" text-anchor="middle">горячий, 2/с</text>
+      <rect class="d-box" x="340" y="130" width="96" height="44" rx="5"/>
+      <text class="d-title" x="388" y="149" text-anchor="middle">сайт B</text>
+      <text class="d-lbl-warn" x="388" y="165" text-anchor="middle">голодает</text>
+      <rect class="d-box" x="340" y="194" width="96" height="44" rx="5"/>
+      <text class="d-title" x="388" y="213" text-anchor="middle">сайт C</text>
+      <text class="d-lbl-warn" x="388" y="229" text-anchor="middle">голодает</text>
+      <text class="d-lbl-warn" x="20" y="256">4 писателя обновляют 1 токен: гонка</text>
+
+      <rect class="d-group" x="480" y="4" width="446" height="262" rx="8"/>
+      <text class="d-gtitle" x="496" y="30">Аренда сайта</text>
+      <text class="d-sub" x="496" y="47">выбрано</text>
+      <rect class="d-box" x="496" y="66" width="76" height="32" rx="5"/><text class="d-lbl" x="534" y="86" text-anchor="middle">воркер 1</text>
+      <rect class="d-box" x="496" y="110" width="76" height="32" rx="5"/><text class="d-lbl" x="534" y="130" text-anchor="middle">воркер 2</text>
+      <rect class="d-box" x="496" y="154" width="76" height="32" rx="5"/><text class="d-lbl" x="534" y="174" text-anchor="middle">воркер 3</text>
+      <rect class="d-box" x="496" y="198" width="76" height="32" rx="5"/><text class="d-lbl" x="534" y="218" text-anchor="middle">воркер 4</text>
+      <path class="d-line-acc" d="M572 82 H798" marker-end="url(#r4-acc)"/>
+      <text class="d-lbl-acc" x="686" y="75" text-anchor="middle">владеет A · свой темп</text>
+      <path class="d-line-acc" d="M572 126 H798" marker-end="url(#r4-acc)"/>
+      <text class="d-lbl-acc" x="686" y="119" text-anchor="middle">владеет B</text>
+      <path class="d-line-acc" d="M572 170 H798" marker-end="url(#r4-acc)"/>
+      <text class="d-lbl-acc" x="686" y="163" text-anchor="middle">владеет C</text>
+      <path class="d-ret" d="M572 214 H798" marker-end="url(#r4-m)"/>
+      <text class="d-sub" x="686" y="207" text-anchor="middle">берёт следующий сайт</text>
+      <rect class="d-box" x="800" y="66" width="110" height="32" rx="5"/><text class="d-lbl" x="855" y="86" text-anchor="middle">сайт A</text>
+      <rect class="d-box" x="800" y="110" width="110" height="32" rx="5"/><text class="d-lbl" x="855" y="130" text-anchor="middle">сайт B</text>
+      <rect class="d-box" x="800" y="154" width="110" height="32" rx="5"/><text class="d-lbl" x="855" y="174" text-anchor="middle">сайт C</text>
+      <rect class="d-dashed" x="800" y="198" width="110" height="32" rx="5"/><text class="d-lbl" x="855" y="218" text-anchor="middle">следующий</text>
+      <text class="d-lbl-acc" x="496" y="256">1 писатель токена на сайт · по кругу</text>
+    </svg>
+    </div>
+    <figcaption><b>Рис. 4.</b> Слева очевидный вариант, справа выбранный.</figcaption>
+  </figure>
+  <div class="plain">
+    <div class="eyebrow">Простыми словами</div>
+    <p>Лимиты запросов считаются на магазин у Shopify, на API-ключ у Webflow, на хостинг у WordPress. Аренда берётся именно на эту единицу, обычно это сайт. Допустим, крупный клиент поставил 5 000 статей на 09:00. Если раздавать воркерам статьи, все они схватят статьи этого клиента и будут стоять в очереди к его лимиту, а остальные клиенты будут ждать. Если раздавать сайты, этого клиента обслуживает один воркер в его темпе, а остальные работают с другими сайтами.</p>
+    <p>Если токены у платформы ротируются, обновлять их всё равно нужно через compare-and-set в базе: зомби может пережить свою аренду. Ограничение: один сайт обслуживается последовательно, это около 40 тыс. статей в день на сайт. Если понадобится больше, сайту можно выдать несколько слотов аренды.</p>
+  </div>
+</section>
+
+<section>
+  <h2>Когда что-то ломается</h2>
+  <div class="table-wrap">
+    <table>
+      <tr><th>ситуация</th><th>что происходит</th></tr>
+      <tr><td>таймаут, 5xx, сеть</td><td>повтор с растущей паузой, от 30 с до 1 ч, со случайным разбросом. После 10 попыток (~4 ч) статья помечается <code>failed</code>, срабатывает алерт</td></tr>
+      <tr><td>429 или 503 с Retry-After</td><td>на паузу встаёт весь сайт, а не одна статья. Retry-After понимается и в секундах, и датой. Попытка не засчитывается</td></tr>
+      <tr><td>401/403, токен отозван</td><td>сначала один раз обновить токен. Не помогло: сайт помечается <code>needs_reauth</code>, но только если креды за это время не поменялись. Его статьи ждут, не тратя попыток, клиент получает уведомление</td></tr>
+      <tr><td>4xx, кривой контент</td><td>сразу <code>failed</code>, клиент видит сообщение платформы</td></tr>
+      <tr><td>kill -9 воркера</td><td>аренда истекает, работа продолжается с последнего сохранённого шага</td></tr>
+      <tr><td>деплой (SIGTERM)</td><td>воркер дописывает текущую статью, отдаёт сайты и выходит</td></tr>
+      <tr><td>статья, на которой воркер падает</td><td>попытки считаются заранее, поэтому она закончится <code>failed</code>, а не будет крутиться вечно</td></tr>
+      <tr><td>часы на машинах расходятся</td><td>все сравнения времени делаются через <code>now()</code> Postgres</td></tr>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2>Как я это проверил</h2>
+  <div class="prose">
+    <p><code>chaos.py</code> создаёт 20 сайтов и 500 статей, причём ставит их в очередь дважды. Запускает 4 воркера и каждые 1–3 секунды либо убивает одного через <code>kill -9</code>, либо замораживает дольше аренды. Поддельный WordPress портит 10% запросов: падает до работы, падает после работы или зависает дольше таймаута. Ещё он ограничивает частоту запросов, отстаёт в поиске и выбирает адреса по правилам WordPress. У каждой десятой статьи кириллический адрес. У сайта 1 пароль отозван, и посреди теста его «переподключают». В конце тест специально воспроизводит гонку с рис. 3 и повтор статьи после восстановления базы из бэкапа, на сайте с отключённой корзиной.</p>
+  </div>
+<pre>500 publications for 500 articles (enqueued twice), {'done': 500}
+workers SIGKILLed: 25, frozen past their lease: 7, retries: 358, 429s: 163,
+  lost races: 1, leftover drafts trashed: 0, still drafts: 1
+live twice: 0, never live: 0, live at the wrong slug: 0
+zombie check: ['lost race', 'published'], live at ['article-353']
+restore check (trash disabled): published, replayed from step draft, re-enqueued:
+  live at ['статья-290']
+<span class="ok">OK: every article is live exactly once, at its own slug</span></pre>
+  <div class="prose">
+    <p>Итог: 500 из 500 статей опубликованы ровно по одному разу и под своим адресом, без дублей и пропусков. Статьи отключённого сайта ждали, не потратив ни одной попытки, и вышли после переподключения. Тест это проверяет через assert.</p>
+    <p>Чтобы убедиться, что тест не зелёный всегда, я ломал код намеренно. Без compare-and-set зомби публикует дважды. С адресом в черновике статья уходит на <code>slug-2</code>. С маркером по id публикации после повторного enqueue на сайте два поста. Со slug в имени файла кириллические статьи не выходят. С ошибкой 501 от отключённой корзины публикация застревает. Все пять поломок тест ловит.</p>
+  </div>
+</section>
+
+<section>
+  <h2>Что нашло ревью и что исправлено</h2>
+  <div class="prose"><p>Отдельная сессия проверила решение скептически, в том числе на настоящем WordPress 7.1.3, а после исправлений перепроверила их там же. Архитектура подтвердилась. Ни в одном из 13 жёстких прогонов не было ни дубля, ни пропуска. Но несколько обещаний в документах оказались неверными, и они исправлены:</p></div>
+  <div class="table-wrap">
+    <table>
+      <tr><th>находка</th><th>исправление</th></tr>
+      <tr><td>лишний черновик занимал адрес, и статья выходила на <code>slug-2</code></td><td>черновик без адреса, поиск по маркеру, лишние черновики в корзину перед публикацией</td></tr>
+      <tr><td>после восстановления базы из бэкапа мог появиться дубль</td><td>маркер это стабильный uid статьи, живой пост предпочитается черновику</td></tr>
+      <tr><td><code>Retry-After</code> в виде даты ломал паузу сайта</td><td>понимаются оба формата, 503 с <code>Retry-After</code> тоже ставит сайт на паузу</td></tr>
+      <tr><td>сайт с уже исправленными кредами снова уходил в <code>needs_reauth</code></td><td>парковка только если креды не поменялись</td></tr>
+      <tr><td>статья с кириллическим slug не выходила никогда: httpx не может отправить его в заголовке</td><td>имя файла картинки строится из uid статьи</td></tr>
+      <tr><td>на сайте с отключённой корзиной публикация застревала</td><td>уборка лишних черновиков больше не блокирует публикацию</td></tr>
+      <tr><td>неточности про Webflow и Wix, «один процесс», партиции по месяцам</td><td>таблица платформ и цифры в README исправлены</td></tr>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2>Что сознательно не делал</h2>
+  <div class="two">
+    <div class="card">
+      <h3>В архитектуре</h3>
+      <ul>
+        <li><strong>Kafka, SQS:</strong> состояние всё равно живёт в базе, получились бы две системы, которые надо синхронизировать. При 2 сообщениях в секунду смысла нет</li>
+        <li><strong>Redis-лимитер:</strong> раз воркер владеет сайтом, он сам держит темп</li>
+        <li><strong>Temporal:</strong> главную проблему, неидемпотентное создание поста в чужом API, он не решает, а кластер добавляет</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>В демо</h3>
+      <ul>
+        <li>адаптеры Shopify, Webflow, Wix: описаны в README, в коде только WordPress</li>
+        <li>шифрование кредов, обновление OAuth-токена</li>
+        <li>чистильщик невидимых черновиков, метрики</li>
+      </ul>
+    </div>
+  </div>
+  <div class="prose">
+    <p class="muted">Если вырастет нагрузка: при ×10 хватит одного Postgres с PgBouncer и партициями, при ×100 базу делим по сайтам. Если у платформы появится общий лимит на приложение, добавляем Redis-счётчик. Если у платформы нет черновиков, нужен чистильщик, который снимает дубли.</p>
+  </div>
+</section>
+
+<section>
+  <h2>Словарик</h2>
+  <dl class="gloss">
+    <dt>идемпотентность</dt><dd>свойство операции: сделать её дважды то же самое, что один раз. «Поставить статус publish» идемпотентно, а «создать пост» нет.</dd>
+    <dt>lease (аренда)</dt><dd>отметка в базе «сайт мой до 12:00:30». Не нужно никого отпускать вручную: если воркер умер, аренда просто истекает.</dd>
+    <dt>SKIP LOCKED</dt><dd>режим Postgres: «дай свободную строку, а занятые пропусти». Воркеры не ждут друг друга.</dd>
+    <dt>CAS</dt><dd>compare-and-set: «запиши новое значение, только если старое всё ещё такое-то». Так из двух конкурентов выигрывает ровно один.</dd>
+    <dt>черновик</dt><dd>пост, который создан на сайте, но не виден читателям. Создаём его без адреса, чтобы лишний черновик не занял адрес статьи.</dd>
+    <dt>маркер</dt><dd>невидимый комментарий <code>&lt;!-- ryze:uid статьи --&gt;</code> в тексте поста. По нему мы узнаём свой пост.</dd>
+    <dt>backoff + jitter</dt><dd>пауза между повторами растёт (30 с, 1 мин, 2 мин…) и чуть случайна, чтобы тысячи повторов не ударили в одну секунду.</dd>
+    <dt>зомби</dt><dd>воркер, который завис дольше аренды и проснулся, когда его работу уже забрал другой.</dd>
+  </dl>
+</section>
+
+</main>

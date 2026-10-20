@@ -1,0 +1,5 @@
+.venv/
+workers.log
+__pycache__/
+.claude/
+covermore-gadget/
