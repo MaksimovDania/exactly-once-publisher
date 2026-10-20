@@ -3,6 +3,8 @@
 Design review plus a small working version (diagrams: [design.html](design.html)). Run `python chaos.py` to watch it publish 500 articles to 20 flaky
 sites while the workers get SIGKILLed and frozen, and to check that every article ends up live exactly once, at its own slug.
 
+Slides: [English (PDF)](docs/presentation-en.pdf) · [Russian (PDF)](docs/presentation-ru.pdf)
+
 ## TL;DR
 
 * **Postgres is the queue, the state machine and the lock manager.** Workers are stateless. There's no Kafka,
